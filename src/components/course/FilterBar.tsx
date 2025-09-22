@@ -1,6 +1,5 @@
-import React from 'react'
 import { Filter } from 'lucide-react'
-import { categories, grades, courseTypes } from '../../data/mockData'
+import { categories, grades } from '../../data/mockData'
 import { useAppContext } from '../../contexts/AppContext'
 
 export function FilterBar() {

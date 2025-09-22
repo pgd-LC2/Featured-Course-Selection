@@ -1,10 +1,8 @@
-import React from 'react'
 import { motion } from 'framer-motion'
-import { Clock, Users, Star, Heart, DollarSign } from 'lucide-react'
+import { Clock, Users, Star, Heart } from 'lucide-react'
 import { Course } from '../../data/mockData'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
-import { formatPrice } from '../../lib/utils'
 import { useAppContext } from '../../contexts/AppContext'
 
 interface CourseCardProps {

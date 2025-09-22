@@ -1,5 +1,4 @@
-import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { AppProvider, useAppContext } from './contexts/AppContext'
 import { BottomNavigation } from './components/layout/BottomNavigation'
 import { LoginPage } from './pages/LoginPage'

@@ -1,9 +1,9 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Settings, Heart, Calendar, Clock, Star, Edit3, Trophy, BookOpen, Target, TrendingUp, LogOut } from 'lucide-react'
+import { Settings, Heart, Calendar, Clock, Star, Edit3, BookOpen, LogOut } from 'lucide-react'
 import { useAppContext } from '../contexts/AppContext'
-import { mockCourses } from '../data/mockData'
+import { mockCourses, CartItem } from '../data/mockData'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
@@ -15,13 +15,13 @@ export function Profile() {
   const navigate = useNavigate()
   const { state, dispatch } = useAppContext()
   const [activeTab, setActiveTab] = useState<'selected' | 'favorites'>('selected')
-  const [editingCourse, setEditingCourse] = useState<any>(null)
+  const [editingCourse, setEditingCourse] = useState<CartItem | null>(null)
 
   const favoriteCourses = mockCourses.filter(course => 
     state.favorites.includes(course.id)
   )
 
-  const handleEditCourse = (courseItem: any) => {
+  const handleEditCourse = (courseItem: CartItem) => {
     setEditingCourse(courseItem)
   }
 

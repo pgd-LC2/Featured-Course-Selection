@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react'
-import { Course, CartItem } from '../data/mockData'
+import { CartItem, TimeSlot } from '../data/mockData'
 
 interface AppState {
   user: { name: string; studentId: string } | null
@@ -18,7 +18,7 @@ type AppAction =
   | { type: 'LOGOUT' }
   | { type: 'ADD_TO_CART'; payload: CartItem }
   | { type: 'REMOVE_FROM_CART'; payload: string }
-  | { type: 'UPDATE_CART_ITEM'; payload: { courseId: string; timeSlot: any } }
+  | { type: 'UPDATE_CART_ITEM'; payload: { courseId: string; timeSlot: TimeSlot } }
   | { type: 'CLEAR_CART' }
   | { type: 'SELECT_COURSES'; payload: CartItem[] }
   | { type: 'TOGGLE_FAVORITE'; payload: string }
@@ -56,7 +56,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         selectedCourses: [],
         favorites: []
       }
-    case 'ADD_TO_CART':
+    case 'ADD_TO_CART': {
       const existingItem = state.cartItems.find(item => item.courseId === action.payload.courseId)
       if (existingItem) {
         return {
@@ -70,6 +70,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         cartItems: [...state.cartItems, action.payload]
       }
+    }
     case 'REMOVE_FROM_CART':
       return {
         ...state,

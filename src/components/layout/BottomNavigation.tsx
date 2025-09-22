@@ -1,6 +1,5 @@
-import React from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, Search, ShoppingCart, User } from 'lucide-react'
+import { Home, ShoppingCart, User } from 'lucide-react'
 import { useAppContext } from '../../contexts/AppContext'
 
 const navItems = [
