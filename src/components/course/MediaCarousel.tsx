@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Play, Image } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Image } from 'lucide-react'
 import { MediaItem } from '../../data/mockData'
 
 interface MediaCarouselProps {

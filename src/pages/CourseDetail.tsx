@@ -1,6 +1,5 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { ArrowLeft, Star, Users, Clock, Heart, ShoppingCart } from 'lucide-react'
 import { mockCourses, TimeSlot } from '../data/mockData'
 import { useAppContext } from '../contexts/AppContext'
@@ -11,7 +10,7 @@ import { TimeSlotSelector } from '../components/course/TimeSlotSelector'
 import { TeacherInfo } from '../components/course/TeacherInfo'
 import { CourseCard } from '../components/course/CourseCard'
 import { MediaCarousel } from '../components/course/MediaCarousel'
-import { formatPrice, checkTimeConflict } from '../lib/utils'
+import { formatPrice } from '../lib/utils'
 
 export function CourseDetail() {
   const { id } = useParams<{ id: string }>()

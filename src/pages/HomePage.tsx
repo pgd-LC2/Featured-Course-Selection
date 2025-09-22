@@ -1,14 +1,12 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Bell } from 'lucide-react'
 import { mockCourses } from '../data/mockData'
-import { useAppContext } from '../contexts/AppContext'
 import { CourseCard } from '../components/course/CourseCard'
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { state } = useAppContext()
   const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
