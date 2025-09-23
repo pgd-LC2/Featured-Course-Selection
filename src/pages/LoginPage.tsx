@@ -12,22 +12,33 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [name, setName] = useState('')
   const [studentId, setStudentId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !studentId.trim()) return
 
     setIsLoading(true)
+    setError(null)
     try {
       const url = import.meta.env.VITE_SUPABASE_URL as string
-      const resp = await fetch(`${url}/functions/v1/login_by_student`, {
+      const endpoint = `${url}/functions/v1/login_by_student`
+      const resp = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ student_id: studentId.trim(), name: name.trim() })
       })
-      const data = await resp.json()
+      let data: unknown = null
+      try { data = await resp.json() } catch { data = null }
       if (!resp.ok) {
-        throw new Error(data?.error || '登录失败')
+        let msg = `登录失败 (${resp.status})`
+        if (typeof data === 'object' && data !== null) {
+          const obj = data as Record<string, unknown>
+          if (typeof obj.error === 'string') msg = obj.error
+          else if (typeof obj.message === 'string') msg = obj.message
+        }
+        setError(msg)
+        return
       }
       if (data?.token) {
         localStorage.setItem('jwt', data.token)
@@ -38,7 +49,8 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '登录失败，请稍后重试'
-      alert(message)
+      setError(message)
+      console.error('login error', err)
     } finally {
       setIsLoading(false)
     }
@@ -128,6 +140,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   />
                 </div>
               </div>
+
+{error && (
+  <div className="mt-3 text-sm text-red-200 text-center">
+    {error}
+  </div>
+)}
 
               {/* 登录按钮 */}
               <Button
