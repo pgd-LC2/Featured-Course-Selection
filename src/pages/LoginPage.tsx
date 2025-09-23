@@ -13,17 +13,35 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const [studentId, setStudentId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !studentId.trim()) return
 
     setIsLoading(true)
-    
-    // 模拟登录处理
-    setTimeout(() => {
-      onLogin({ name: name.trim(), studentId: studentId.trim() })
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL as string
+      const resp = await fetch(`${url}/functions/v1/login_by_student`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId.trim(), name: name.trim() })
+      })
+      const data = await resp.json()
+      if (!resp.ok) {
+        throw new Error(data?.error || '登录失败')
+      }
+      if (data?.token) {
+        try {
+          localStorage.setItem('jwt', data.token)
+        } catch {}
+        onLogin({ name: name.trim(), studentId: studentId.trim() })
+      } else {
+        throw new Error('未获取到令牌')
+      }
+    } catch (err: any) {
+      alert(err?.message || '登录失败，请稍后重试')
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
