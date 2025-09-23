@@ -11,7 +11,7 @@ import { Profile } from './pages/Profile'
 function AppContent() {
   const { state, dispatch } = useAppContext()
 
-  const handleLogin = (userData: { name: string; studentId: string }) => {
+  const handleLogin = (userData: { name: string; studentId: string; token: string }) => {
     dispatch({ type: 'LOGIN', payload: userData })
   }
 

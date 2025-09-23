@@ -18,3 +18,8 @@ export function createAuthedClient(token: string) {
     global: { headers: { Authorization: `Bearer ${token}` } }
   })
 }
+
+export function authHeader(): HeadersInit {
+  const t = getAuthToken()
+  return t ? { Authorization: `Bearer ${t}` } : {}
+}
