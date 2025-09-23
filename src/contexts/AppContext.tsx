@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react'
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
 import { CartItem, TimeSlot } from '../data/mockData'
+import * as supabaseService from '../lib/supabaseService'
 
 interface AppState {
   user: { name: string; studentId: string } | null
+  token: string | null
   isLoggedIn: boolean
   cartItems: CartItem[]
   selectedCourses: CartItem[]
@@ -11,10 +13,15 @@ interface AppState {
   selectedCategory: string
   selectedGrade: string
   selectedCourseType: string
+  loading: {
+    favorites: boolean
+    cart: boolean
+    selectedCourses: boolean
+  }
 }
 
 type AppAction =
-  | { type: 'LOGIN'; payload: { name: string; studentId: string } }
+  | { type: 'LOGIN'; payload: { name: string; studentId: string; token: string } }
   | { type: 'LOGOUT' }
   | { type: 'ADD_TO_CART'; payload: CartItem }
   | { type: 'REMOVE_FROM_CART'; payload: string }
@@ -26,9 +33,14 @@ type AppAction =
   | { type: 'SET_CATEGORY'; payload: string }
   | { type: 'SET_GRADE'; payload: string }
   | { type: 'SET_COURSE_TYPE'; payload: string }
+  | { type: 'SET_FAVORITES'; payload: string[] }
+  | { type: 'SET_CART_ITEMS'; payload: CartItem[] }
+  | { type: 'SET_SELECTED_COURSES'; payload: CartItem[] }
+  | { type: 'SET_LOADING'; payload: { key: keyof AppState['loading']; value: boolean } }
 
 const initialState: AppState = {
   user: null,
+  token: null,
   isLoggedIn: false,
   cartItems: [],
   selectedCourses: [],
@@ -36,7 +48,12 @@ const initialState: AppState = {
   searchQuery: '',
   selectedCategory: '全部',
   selectedGrade: '全部',
-  selectedCourseType: '全部'
+  selectedCourseType: '全部',
+  loading: {
+    favorites: false,
+    cart: false,
+    selectedCourses: false
+  }
 }
 
 function appReducer(state: AppState, action: AppAction): AppState {
@@ -44,13 +61,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'LOGIN':
       return {
         ...state,
-        user: action.payload,
+        user: { name: action.payload.name, studentId: action.payload.studentId },
+        token: action.payload.token,
         isLoggedIn: true
       }
     case 'LOGOUT':
       return {
         ...state,
         user: null,
+        token: null,
         isLoggedIn: false,
         cartItems: [],
         selectedCourses: [],
@@ -123,6 +142,29 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         selectedCourseType: action.payload
       }
+    case 'SET_FAVORITES':
+      return {
+        ...state,
+        favorites: action.payload
+      }
+    case 'SET_CART_ITEMS':
+      return {
+        ...state,
+        cartItems: action.payload
+      }
+    case 'SET_SELECTED_COURSES':
+      return {
+        ...state,
+        selectedCourses: action.payload
+      }
+    case 'SET_LOADING':
+      return {
+        ...state,
+        loading: {
+          ...state.loading,
+          [action.payload.key]: action.payload.value
+        }
+      }
     default:
       return state
   }
@@ -131,13 +173,169 @@ function appReducer(state: AppState, action: AppAction): AppState {
 const AppContext = createContext<{
   state: AppState
   dispatch: React.Dispatch<AppAction>
+  actions: {
+    loadFavorites: () => Promise<void>
+    toggleFavorite: (courseId: string) => Promise<void>
+    loadCartItems: () => Promise<void>
+    addToCart: (item: CartItem) => Promise<void>
+    removeFromCart: (courseId: string) => Promise<void>
+    updateCartItem: (courseId: string, timeSlot: TimeSlot) => Promise<void>
+    clearCart: () => Promise<void>
+    loadSelectedCourses: () => Promise<void>
+    selectCourses: (items: CartItem[]) => Promise<void>
+  }
 } | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
+  useEffect(() => {
+    const userRaw = localStorage.getItem('user')
+    const token = localStorage.getItem('jwt')
+    if (userRaw && token) {
+      const u = JSON.parse(userRaw) as { name: string; studentId: string }
+      dispatch({ type: 'LOGIN', payload: { name: u.name, studentId: u.studentId, token } })
+    }
+  }, [])
+
+  useEffect(() => {
+    if (state.isLoggedIn && state.user) {
+      loadFavorites()
+      loadCartItems()
+      loadSelectedCourses()
+    }
+  }, [state.isLoggedIn])
+
+  const loadFavorites = async () => {
+    if (!state.user) return
+    dispatch({ type: 'SET_LOADING', payload: { key: 'favorites', value: true } })
+    try {
+      const favorites = await supabaseService.getFavorites(state.user.studentId)
+      dispatch({ type: 'SET_FAVORITES', payload: favorites })
+    } catch (error) {
+      console.error('Failed to load favorites:', error)
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'favorites', value: false } })
+    }
+  }
+
+  const toggleFavorite = async (courseId: string) => {
+    if (!state.user) return
+    try {
+      const isFavorite = state.favorites.includes(courseId)
+      if (isFavorite) {
+        await supabaseService.removeFavorite(state.user.studentId, courseId)
+        dispatch({ type: 'TOGGLE_FAVORITE', payload: courseId })
+      } else {
+        await supabaseService.addFavorite(state.user.studentId, courseId)
+        dispatch({ type: 'TOGGLE_FAVORITE', payload: courseId })
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error)
+    }
+  }
+
+  const loadCartItems = async () => {
+    if (!state.user) return
+    dispatch({ type: 'SET_LOADING', payload: { key: 'cart', value: true } })
+    try {
+      const cartItems = await supabaseService.getCartItems(state.user.studentId)
+      dispatch({ type: 'SET_CART_ITEMS', payload: cartItems })
+    } catch (error) {
+      console.error('Failed to load cart items:', error)
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'cart', value: false } })
+    }
+  }
+
+  const addToCart = async (item: CartItem) => {
+    if (!state.user) return
+    try {
+      await supabaseService.addToCart(
+        state.user.studentId,
+        item.courseId,
+        item.selectedTimeSlot.id,
+        item.selectedDate
+      )
+      dispatch({ type: 'ADD_TO_CART', payload: item })
+    } catch (error) {
+      console.error('Failed to add to cart:', error)
+    }
+  }
+
+  const removeFromCart = async (courseId: string) => {
+    if (!state.user) return
+    try {
+      await supabaseService.removeFromCart(state.user.studentId, courseId)
+      dispatch({ type: 'REMOVE_FROM_CART', payload: courseId })
+    } catch (error) {
+      console.error('Failed to remove from cart:', error)
+    }
+  }
+
+  const updateCartItem = async (courseId: string, timeSlot: TimeSlot) => {
+    if (!state.user) return
+    try {
+      await supabaseService.updateCartItem(state.user.studentId, courseId, timeSlot.id)
+      dispatch({ type: 'UPDATE_CART_ITEM', payload: { courseId, timeSlot } })
+    } catch (error) {
+      console.error('Failed to update cart item:', error)
+    }
+  }
+
+  const clearCart = async () => {
+    if (!state.user) return
+    try {
+      await supabaseService.clearCart(state.user.studentId)
+      dispatch({ type: 'CLEAR_CART' })
+    } catch (error) {
+      console.error('Failed to clear cart:', error)
+    }
+  }
+
+  const loadSelectedCourses = async () => {
+    if (!state.user) return
+    dispatch({ type: 'SET_LOADING', payload: { key: 'selectedCourses', value: true } })
+    try {
+      const selectedCourses = await supabaseService.getSelectedCourses(state.user.studentId)
+      dispatch({ type: 'SET_SELECTED_COURSES', payload: selectedCourses })
+    } catch (error) {
+      console.error('Failed to load selected courses:', error)
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'selectedCourses', value: false } })
+    }
+  }
+
+  const selectCourses = async (items: CartItem[]) => {
+    if (!state.user) return
+    try {
+      const cartItems = items.map(item => ({
+        student_id: state.user!.studentId,
+        course_id: item.courseId,
+        time_slot_id: item.selectedTimeSlot.id
+      }))
+      await supabaseService.selectCourses(state.user.studentId, cartItems)
+      dispatch({ type: 'SELECT_COURSES', payload: items })
+      await loadSelectedCourses()
+    } catch (error) {
+      console.error('Failed to select courses:', error)
+    }
+  }
+
+  const actions = {
+    loadFavorites,
+    toggleFavorite,
+    loadCartItems,
+    addToCart,
+    removeFromCart,
+    updateCartItem,
+    clearCart,
+    loadSelectedCourses,
+    selectCourses
+  }
+
   return (
-    <AppContext.Provider value={{ state, dispatch }}>
+    <AppContext.Provider value={{ state, dispatch, actions }}>
       {children}
     </AppContext.Provider>
   )

@@ -5,25 +5,57 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 
 interface LoginPageProps {
-  onLogin: (userData: { name: string; studentId: string }) => void
+  onLogin: (userData: { name: string; studentId: string; token: string }) => void
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [name, setName] = useState('')
   const [studentId, setStudentId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !studentId.trim()) return
 
     setIsLoading(true)
-    
-    // 模拟登录处理
-    setTimeout(() => {
-      onLogin({ name: name.trim(), studentId: studentId.trim() })
+    setError(null)
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL as string
+      const endpoint = `${url}/functions/v1/login_by_student`
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ student_id: studentId.trim(), name: name.trim() })
+      })
+      let data: unknown = null
+      try { data = await resp.json() } catch { data = null }
+      if (!resp.ok) {
+        let msg = `登录失败 (${resp.status})`
+        if (typeof data === 'object' && data !== null) {
+          const obj = data as Record<string, unknown>
+          if (typeof obj.error === 'string') msg = obj.error
+          else if (typeof obj.message === 'string') msg = obj.message
+        }
+        setError(msg)
+        return
+      }
+      const obj = (typeof data === 'object' && data !== null ? data as Record<string, unknown> : {}) as Record<string, unknown>
+      const token = typeof obj.token === 'string' ? obj.token : null
+      if (token) {
+        localStorage.setItem('jwt', token)
+        localStorage.setItem('user', JSON.stringify({ name: name.trim(), studentId: studentId.trim() }))
+        onLogin({ name: name.trim(), studentId: studentId.trim(), token })
+      } else {
+        throw new Error('未获取到令牌')
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '登录失败，请稍后重试'
+      setError(message)
+      console.error('login error', err)
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -110,6 +142,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
                   />
                 </div>
               </div>
+
+{error && (
+  <div className="mt-3 text-sm text-red-200 text-center">
+    {error}
+  </div>
+)}
 
               {/* 登录按钮 */}
               <Button
