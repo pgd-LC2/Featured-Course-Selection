@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react'
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
 import { CartItem, TimeSlot } from '../data/mockData'
 
 interface AppState {
   user: { name: string; studentId: string } | null
+  token: string | null
   isLoggedIn: boolean
   cartItems: CartItem[]
   selectedCourses: CartItem[]
@@ -14,7 +15,7 @@ interface AppState {
 }
 
 type AppAction =
-  | { type: 'LOGIN'; payload: { name: string; studentId: string } }
+  | { type: 'LOGIN'; payload: { name: string; studentId: string; token: string } }
   | { type: 'LOGOUT' }
   | { type: 'ADD_TO_CART'; payload: CartItem }
   | { type: 'REMOVE_FROM_CART'; payload: string }
@@ -29,6 +30,7 @@ type AppAction =
 
 const initialState: AppState = {
   user: null,
+  token: null,
   isLoggedIn: false,
   cartItems: [],
   selectedCourses: [],
@@ -44,13 +46,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'LOGIN':
       return {
         ...state,
-        user: action.payload,
+        user: { name: action.payload.name, studentId: action.payload.studentId },
+        token: action.payload.token,
         isLoggedIn: true
       }
     case 'LOGOUT':
       return {
         ...state,
         user: null,
+        token: null,
         isLoggedIn: false,
         cartItems: [],
         selectedCourses: [],
@@ -135,6 +139,15 @@ const AppContext = createContext<{
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
+
+  useEffect(() => {
+    const userRaw = localStorage.getItem('user')
+    const token = localStorage.getItem('jwt')
+    if (userRaw && token) {
+      const u = JSON.parse(userRaw) as { name: string; studentId: string }
+      dispatch({ type: 'LOGIN', payload: { name: u.name, studentId: u.studentId, token } })
+    }
+  }, [])
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

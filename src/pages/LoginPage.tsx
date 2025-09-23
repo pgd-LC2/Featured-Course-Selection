@@ -5,7 +5,7 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 
 interface LoginPageProps {
-  onLogin: (userData: { name: string; studentId: string }) => void
+  onLogin: (userData: { name: string; studentId: string; token: string }) => void
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -30,15 +30,15 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         throw new Error(data?.error || '登录失败')
       }
       if (data?.token) {
-        try {
-          localStorage.setItem('jwt', data.token)
-        } catch {}
-        onLogin({ name: name.trim(), studentId: studentId.trim() })
+        localStorage.setItem('jwt', data.token)
+        localStorage.setItem('user', JSON.stringify({ name: name.trim(), studentId: studentId.trim() }))
+        onLogin({ name: name.trim(), studentId: studentId.trim(), token: data.token })
       } else {
         throw new Error('未获取到令牌')
       }
-    } catch (err: any) {
-      alert(err?.message || '登录失败，请稍后重试')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : '登录失败，请稍后重试'
+      alert(message)
     } finally {
       setIsLoading(false)
     }
