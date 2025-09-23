@@ -40,10 +40,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         setError(msg)
         return
       }
-      if (data?.token) {
-        localStorage.setItem('jwt', data.token)
+      const obj = (typeof data === 'object' && data !== null ? data as Record<string, unknown> : {}) as Record<string, unknown>
+      const token = typeof obj.token === 'string' ? obj.token : null
+      if (token) {
+        localStorage.setItem('jwt', token)
         localStorage.setItem('user', JSON.stringify({ name: name.trim(), studentId: studentId.trim() }))
-        onLogin({ name: name.trim(), studentId: studentId.trim(), token: data.token })
+        onLogin({ name: name.trim(), studentId: studentId.trim(), token })
       } else {
         throw new Error('未获取到令牌')
       }
