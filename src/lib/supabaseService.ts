@@ -7,11 +7,6 @@ interface CartItem {
   selected_date?: string
 }
 
-interface SelectedCourse {
-  student_id: string
-  course_id: string
-  time_slot_id: string
-}
 
 export async function getFavorites(studentId: string): Promise<string[]> {
   const token = getAuthToken()
@@ -225,6 +220,14 @@ export async function getCourses(): Promise<any[]> {
     .from('courses')
     .select(`
       *,
+      instructors (
+        id,
+        name,
+        avatar,
+        bio,
+        specialties,
+        rating
+      ),
       time_slots (
         id,
         day_of_week,
@@ -234,8 +237,47 @@ export async function getCourses(): Promise<any[]> {
       )
     `)
   
-  if (error) throw error
-  return data || []
+  if (error) {
+    console.error('Error fetching courses:', error)
+    throw error
+  }
+  
+  return (data || []).map(course => ({
+    ...course,
+    teacher: course.instructors ? {
+      id: course.instructors.id,
+      name: course.instructors.name,
+      avatar: course.instructors.avatar,
+      bio: course.instructors.bio,
+      specialties: course.instructors.specialties,
+      rating: course.instructors.rating
+    } : {
+      id: course.teacher,
+      name: course.teacher,
+      avatar: '/avatars/default.jpg',
+      bio: '优秀教师',
+      specialties: [],
+      rating: 4.5
+    },
+    timeSlots: course.time_slots?.map((slot: any) => ({
+      id: slot.id,
+      dayOfWeek: getDayOfWeekName(slot.day_of_week),
+      startTime: slot.start_time,
+      endTime: slot.end_time,
+      available: slot.available
+    })) || [],
+    coverImage: course.cover_image || 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=600',
+    mediaContent: course.media_content || [],
+    reviewCount: course.review_count || 0,
+    materialFee: course.material_fee || 0,
+    tags: course.tags || [],
+    description: course.description || ''
+  }))
+}
+
+function getDayOfWeekName(dayNum: number): string {
+  const days = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日']
+  return days[dayNum] || '周一'
 }
 
 export async function getInstructors(): Promise<any[]> {

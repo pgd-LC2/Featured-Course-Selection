@@ -1,9 +1,22 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Settings, Heart, Calendar, Clock, Star, Edit3, BookOpen, LogOut } from 'lucide-react'
 import { useAppContext } from '../contexts/AppContext'
-import { mockCourses, CartItem } from '../data/mockData'
+interface CartItem {
+  courseId: string
+  course: any
+  selectedTimeSlot: TimeSlot
+  selectedDate?: string
+}
+
+interface TimeSlot {
+  id: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  available: boolean
+}
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
@@ -13,11 +26,17 @@ import { formatPrice } from '../lib/utils'
 
 export function Profile() {
   const navigate = useNavigate()
-  const { state, dispatch } = useAppContext()
+  const { state, dispatch, actions } = useAppContext()
   const [activeTab, setActiveTab] = useState<'selected' | 'favorites'>('selected')
   const [editingCourse, setEditingCourse] = useState<CartItem | null>(null)
 
-  const favoriteCourses = mockCourses.filter(course => 
+  useEffect(() => {
+    if (state.courses.length === 0) {
+      actions.loadCourses()
+    }
+  }, [])
+
+  const favoriteCourses = state.courses.filter(course => 
     state.favorites.includes(course.id)
   )
 
@@ -26,7 +45,7 @@ export function Profile() {
   }
 
   const handleRemoveFromFavorites = (courseId: string) => {
-    dispatch({ type: 'TOGGLE_FAVORITE', payload: courseId })
+    actions.toggleFavorite(courseId)
   }
 
   const handleLogout = () => {

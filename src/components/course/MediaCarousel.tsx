@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ChevronLeft, ChevronRight, Image } from 'lucide-react'
-import { MediaItem } from '../../data/mockData'
 
 interface MediaCarouselProps {
-  mediaItems: MediaItem[]
+  mediaItems: any[]
   className?: string
 }
 

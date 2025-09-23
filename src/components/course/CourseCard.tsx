@@ -1,9 +1,25 @@
 import { motion } from 'framer-motion'
 import { Clock, Users, Star, Heart } from 'lucide-react'
-import { Course } from '../../data/mockData'
 import { Card } from '../ui/Card'
 import { Badge } from '../ui/Badge'
 import { useAppContext } from '../../contexts/AppContext'
+
+interface Course {
+  id: string
+  title: string
+  category: string
+  rating: number
+  enrolled: number
+  capacity: number
+  coverImage: string
+  teacher: {
+    name: string
+    avatar: string
+  }
+  timeSlots: Array<{
+    dayOfWeek: string
+  }>
+}
 
 interface CourseCardProps {
   course: Course
@@ -11,12 +27,12 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course, onClick }: CourseCardProps) {
-  const { state, dispatch } = useAppContext()
+  const { state, actions } = useAppContext()
   const isFavorite = state.favorites.includes(course.id)
 
   const handleFavoriteToggle = (e: React.MouseEvent) => {
     e.stopPropagation()
-    dispatch({ type: 'TOGGLE_FAVORITE', payload: course.id })
+    actions.toggleFavorite(course.id)
   }
 
   return (

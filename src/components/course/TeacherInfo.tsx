@@ -1,7 +1,14 @@
-import React from 'react'
 import { Star, Award } from 'lucide-react'
-import { Teacher } from '../../data/mockData'
 import { Badge } from '../ui/Badge'
+
+interface Teacher {
+  id: string
+  name: string
+  avatar: string
+  bio: string
+  specialties: string[]
+  rating: number
+}
 
 interface TeacherInfoProps {
   teacher: Teacher
