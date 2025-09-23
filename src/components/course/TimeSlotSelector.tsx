@@ -1,7 +1,12 @@
-import React from 'react'
 import { motion } from 'framer-motion'
 import { Clock, CheckCircle } from 'lucide-react'
-import { TimeSlot } from '../../data/mockData'
+interface TimeSlot {
+  id: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  available: boolean
+}
 
 interface TimeSlotSelectorProps {
   timeSlots: TimeSlot[]
