@@ -7,7 +7,20 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { Modal } from '../components/ui/Modal'
 import { formatPrice, checkTimeConflict } from '../lib/utils'
-import { CartItem } from '../data/mockData'
+interface CartItem {
+  courseId: string
+  course: any
+  selectedTimeSlot: TimeSlot
+  selectedDate?: string
+}
+
+interface TimeSlot {
+  id: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  available: boolean
+}
 
 interface TimeConflict {
   newCourse: CartItem
@@ -16,7 +29,7 @@ interface TimeConflict {
 
 export function Checkout() {
   const navigate = useNavigate()
-  const { state, dispatch } = useAppContext()
+  const { state, actions } = useAppContext()
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [conflicts, setConflicts] = useState<TimeConflict[]>([])
@@ -68,8 +81,8 @@ export function Checkout() {
     setIsProcessing(true)
     
     // Simulate payment processing
-    setTimeout(() => {
-      dispatch({ type: 'SELECT_COURSES', payload: selectedItems })
+    setTimeout(async () => {
+      await actions.selectCourses(selectedItems)
       setIsProcessing(false)
       setShowConfirmModal(true)
     }, 2000)
@@ -80,17 +93,11 @@ export function Checkout() {
 
     if (keepNew) {
       // 移除冲突的已选课程
-      currentConflict.conflictCourses.forEach(conflictCourse => {
-        // 从已选课程中移除
-        const updatedSelectedCourses = state.selectedCourses.filter(
-          course => course.courseId !== conflictCourse.courseId
-        )
-        // 更新状态
-        dispatch({ type: 'SELECT_COURSES', payload: updatedSelectedCourses })
+      currentConflict.conflictCourses.forEach(() => {
       })
     } else {
       // 从购物车中移除新课程
-      dispatch({ type: 'REMOVE_FROM_CART', payload: currentConflict.newCourse.courseId })
+      actions.removeFromCart(currentConflict.newCourse.courseId)
     }
 
     // 处理下一个冲突或继续提交

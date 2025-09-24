@@ -1,11 +1,26 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
-import { CartItem, TimeSlot } from '../data/mockData'
 import * as supabaseService from '../lib/supabaseService'
+
+interface CartItem {
+  courseId: string
+  course: any
+  selectedTimeSlot: TimeSlot
+  selectedDate?: string
+}
+
+interface TimeSlot {
+  id: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  available: boolean
+}
 
 interface AppState {
   user: { name: string; studentId: string } | null
   token: string | null
   isLoggedIn: boolean
+  courses: any[]
   cartItems: CartItem[]
   selectedCourses: CartItem[]
   favorites: string[]
@@ -14,6 +29,7 @@ interface AppState {
   selectedGrade: string
   selectedCourseType: string
   loading: {
+    courses: boolean
     favorites: boolean
     cart: boolean
     selectedCourses: boolean
@@ -33,6 +49,7 @@ type AppAction =
   | { type: 'SET_CATEGORY'; payload: string }
   | { type: 'SET_GRADE'; payload: string }
   | { type: 'SET_COURSE_TYPE'; payload: string }
+  | { type: 'SET_COURSES'; payload: any[] }
   | { type: 'SET_FAVORITES'; payload: string[] }
   | { type: 'SET_CART_ITEMS'; payload: CartItem[] }
   | { type: 'SET_SELECTED_COURSES'; payload: CartItem[] }
@@ -42,6 +59,7 @@ const initialState: AppState = {
   user: null,
   token: null,
   isLoggedIn: false,
+  courses: [],
   cartItems: [],
   selectedCourses: [],
   favorites: [],
@@ -50,6 +68,7 @@ const initialState: AppState = {
   selectedGrade: '全部',
   selectedCourseType: '全部',
   loading: {
+    courses: false,
     favorites: false,
     cart: false,
     selectedCourses: false
@@ -142,6 +161,11 @@ function appReducer(state: AppState, action: AppAction): AppState {
         ...state,
         selectedCourseType: action.payload
       }
+    case 'SET_COURSES':
+      return {
+        ...state,
+        courses: action.payload
+      }
     case 'SET_FAVORITES':
       return {
         ...state,
@@ -174,6 +198,7 @@ const AppContext = createContext<{
   state: AppState
   dispatch: React.Dispatch<AppAction>
   actions: {
+    loadCourses: () => Promise<void>
     loadFavorites: () => Promise<void>
     toggleFavorite: (courseId: string) => Promise<void>
     loadCartItems: () => Promise<void>
@@ -199,12 +224,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
+    loadCourses()
+  }, [])
+
+  useEffect(() => {
     if (state.isLoggedIn && state.user) {
       loadFavorites()
       loadCartItems()
       loadSelectedCourses()
     }
   }, [state.isLoggedIn])
+
+  const loadCourses = async () => {
+    dispatch({ type: 'SET_LOADING', payload: { key: 'courses', value: true } })
+    try {
+      const courses = await supabaseService.getCourses()
+      dispatch({ type: 'SET_COURSES', payload: courses })
+    } catch (error) {
+      console.error('Failed to load courses:', error)
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: { key: 'courses', value: false } })
+    }
+  }
 
   const loadFavorites = async () => {
     if (!state.user) return
@@ -239,13 +280,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!state.user) return
     dispatch({ type: 'SET_LOADING', payload: { key: 'cart', value: true } })
     try {
-      const cartItems = await supabaseService.getCartItems(state.user.studentId)
+      const cartItemsData = await supabaseService.getCartItems(state.user.studentId)
+      const cartItems = cartItemsData.map((item: any) => ({
+        courseId: item.course_id,
+        course: {
+          id: item.courses.id,
+          title: item.courses.title,
+          teacher: item.courses.teacher,
+          category: item.courses.category,
+          grade: item.courses.grade,
+          price: item.courses.price,
+          materialFee: item.courses.material_fee,
+          capacity: item.courses.capacity,
+          enrolled: item.courses.enrolled,
+          coverImage: item.courses.cover_image || 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=600',
+          rating: item.courses.rating || 4.5,
+          reviewCount: item.courses.review_count || 0,
+          tags: item.courses.tags || [],
+          timeSlots: [],
+          mediaContent: item.courses.media_content || []
+        },
+        selectedTimeSlot: {
+          id: item.time_slots.id,
+          dayOfWeek: getDayOfWeekName(item.time_slots.day_of_week),
+          startTime: item.time_slots.start_time,
+          endTime: item.time_slots.end_time,
+          available: item.time_slots.available
+        },
+        selectedDate: item.selected_date
+      })) as any[]
       dispatch({ type: 'SET_CART_ITEMS', payload: cartItems })
     } catch (error) {
       console.error('Failed to load cart items:', error)
     } finally {
       dispatch({ type: 'SET_LOADING', payload: { key: 'cart', value: false } })
     }
+  }
+
+  const getDayOfWeekName = (dayNum: number): string => {
+    const days = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    return days[dayNum] || '周一'
   }
 
   const addToCart = async (item: CartItem) => {
@@ -297,7 +371,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!state.user) return
     dispatch({ type: 'SET_LOADING', payload: { key: 'selectedCourses', value: true } })
     try {
-      const selectedCourses = await supabaseService.getSelectedCourses(state.user.studentId)
+      const selectedCoursesData = await supabaseService.getSelectedCourses(state.user.studentId)
+      const selectedCourses = selectedCoursesData.map((item: any) => ({
+        courseId: item.course_id,
+        course: {
+          id: item.courses.id,
+          title: item.courses.title,
+          teacher: item.courses.teacher,
+          category: item.courses.category,
+          grade: item.courses.grade,
+          price: item.courses.price,
+          materialFee: item.courses.material_fee,
+          capacity: item.courses.capacity,
+          enrolled: item.courses.enrolled,
+          coverImage: item.courses.cover_image || 'https://images.pexels.com/photos/3184360/pexels-photo-3184360.jpeg?auto=compress&cs=tinysrgb&w=600',
+          rating: item.courses.rating || 4.5,
+          reviewCount: item.courses.review_count || 0,
+          tags: item.courses.tags || [],
+          timeSlots: [],
+          mediaContent: item.courses.media_content || []
+        },
+        selectedTimeSlot: {
+          id: item.time_slots.id,
+          dayOfWeek: getDayOfWeekName(item.time_slots.day_of_week),
+          startTime: item.time_slots.start_time,
+          endTime: item.time_slots.end_time,
+          available: item.time_slots.available
+        },
+        selectedDate: item.selected_at
+      })) as any[]
       dispatch({ type: 'SET_SELECTED_COURSES', payload: selectedCourses })
     } catch (error) {
       console.error('Failed to load selected courses:', error)
@@ -323,6 +425,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const actions = {
+    loadCourses,
     loadFavorites,
     toggleFavorite,
     loadCartItems,

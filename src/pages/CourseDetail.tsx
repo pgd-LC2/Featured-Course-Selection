@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Star, Users, Clock, Heart, ShoppingCart } from 'lucide-react'
-import { mockCourses, TimeSlot } from '../data/mockData'
+interface TimeSlot {
+  id: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  available: boolean
+}
 import { useAppContext } from '../contexts/AppContext'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
@@ -15,16 +21,22 @@ import { formatPrice } from '../lib/utils'
 export function CourseDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { state, dispatch } = useAppContext()
+  const { state, actions } = useAppContext()
   const [showTimeSelector, setShowTimeSelector] = useState(false)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | undefined>()
 
-  const course = mockCourses.find(c => c.id === id)
+  useEffect(() => {
+    if (state.courses.length === 0) {
+      actions.loadCourses()
+    }
+  }, [])
+
+  const course = state.courses.find(c => c.id === id)
   const isFavorite = course && state.favorites.includes(course.id)
   const isInCart = course && state.cartItems.some(item => item.courseId === course.id)
   
   // Get recommended courses (excluding current course)
-  const recommendedCourses = mockCourses
+  const recommendedCourses = state.courses
     .filter(c => c.id !== id && c.category === course?.category)
     .slice(0, 2)
 
@@ -61,7 +73,7 @@ export function CourseDetail() {
       selectedDate: new Date().toISOString().split('T')[0]
     }
 
-    dispatch({ type: 'ADD_TO_CART', payload: cartItem })
+    actions.addToCart(cartItem)
     
     // Show success feedback
     const button = document.getElementById('add-to-cart-btn')
@@ -85,7 +97,7 @@ export function CourseDetail() {
         selectedDate: new Date().toISOString().split('T')[0]
       }
 
-      dispatch({ type: 'ADD_TO_CART', payload: cartItem })
+      actions.addToCart(cartItem)
       
       // Show success feedback
       const button = document.getElementById('add-to-cart-btn')
@@ -99,7 +111,7 @@ export function CourseDetail() {
   }
 
   const handleFavoriteToggle = () => {
-    dispatch({ type: 'TOGGLE_FAVORITE', payload: course.id })
+    actions.toggleFavorite(course.id)
   }
 
   return (
@@ -173,7 +185,7 @@ export function CourseDetail() {
 
           {/* Course Tags */}
           <div className="flex flex-wrap gap-2">
-            {course.tags.map((tag) => (
+            {course.tags?.map((tag: string) => (
               <Badge key={tag} variant="secondary">
                 {tag}
               </Badge>
@@ -193,7 +205,7 @@ export function CourseDetail() {
               上课时间
             </h3>
             <div className="grid gap-2">
-              {course.timeSlots.map((slot) => (
+              {course.timeSlots.map((slot: any) => (
                 <div
                   key={slot.id}
                   className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -252,7 +264,7 @@ export function CourseDetail() {
               size="md"
               className="flex-1 flex items-center justify-center"
               onClick={handleAddToCart}
-              disabled={!course.timeSlots.some(slot => slot.available)}
+              disabled={!course.timeSlots.some((slot: any) => slot.available)}
             >
               {isInCart ? '修改时间' : '加入购物车'}
             </Button>

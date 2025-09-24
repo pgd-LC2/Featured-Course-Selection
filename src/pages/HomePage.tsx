@@ -2,11 +2,12 @@ import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Bell } from 'lucide-react'
-import { mockCourses } from '../data/mockData'
+import { useAppContext } from '../contexts/AppContext'
 import { CourseCard } from '../components/course/CourseCard'
 
 export function HomePage() {
   const navigate = useNavigate()
+  const { state, actions } = useAppContext()
   const [isScrolled, setIsScrolled] = useState(false)
 
   useEffect(() => {
@@ -18,9 +19,30 @@ export function HomePage() {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const filteredCourses = useMemo(() => {
-    return mockCourses
+  useEffect(() => {
+    actions.loadCourses()
   }, [])
+
+  const filteredCourses = useMemo(() => {
+    let filtered = state.courses
+
+    if (state.selectedCategory !== '全部') {
+      filtered = filtered.filter(course => course.category === state.selectedCategory)
+    }
+
+    if (state.selectedGrade !== '全部') {
+      filtered = filtered.filter(course => course.grade === state.selectedGrade)
+    }
+
+    if (state.searchQuery) {
+      filtered = filtered.filter(course => 
+        course.title.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+        (course.teacher?.name || course.teacher || '').toLowerCase().includes(state.searchQuery.toLowerCase())
+      )
+    }
+
+    return filtered
+  }, [state.courses, state.selectedCategory, state.selectedGrade, state.searchQuery])
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 hide-scrollbar overflow-y-auto">

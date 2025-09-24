@@ -8,11 +8,23 @@ import { Card } from '../components/ui/Card'
 import { Modal } from '../components/ui/Modal'
 import { TimeSlotSelector } from '../components/course/TimeSlotSelector'
 import { formatPrice } from '../lib/utils'
-import { CartItem, TimeSlot } from '../data/mockData'
+interface CartItem {
+  courseId: string
+  course: any
+  selectedTimeSlot: TimeSlot
+}
+
+interface TimeSlot {
+  id: string
+  dayOfWeek: string
+  startTime: string
+  endTime: string
+  available: boolean
+}
 
 export function ShoppingCart() {
   const navigate = useNavigate()
-  const { state, dispatch } = useAppContext()
+  const { state, actions } = useAppContext()
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [editingItem, setEditingItem] = useState<CartItem | null>(null)
   const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | undefined>()
@@ -38,13 +50,13 @@ export function ShoppingCart() {
   }
 
   const handleRemoveItem = (courseId: string) => {
-    dispatch({ type: 'REMOVE_FROM_CART', payload: courseId })
+    actions.removeFromCart(courseId)
     setSelectedItems(prev => prev.filter(id => id !== courseId))
   }
 
   const handleRemoveSelected = () => {
     selectedItems.forEach(courseId => {
-      dispatch({ type: 'REMOVE_FROM_CART', payload: courseId })
+      actions.removeFromCart(courseId)
     })
     setSelectedItems([])
   }
@@ -56,13 +68,7 @@ export function ShoppingCart() {
 
   const handleConfirmTimeEdit = () => {
     if (editingItem && selectedTimeSlot) {
-      dispatch({
-        type: 'UPDATE_CART_ITEM',
-        payload: {
-          courseId: editingItem.courseId,
-          timeSlot: selectedTimeSlot
-        }
-      })
+      actions.updateCartItem(editingItem.courseId, selectedTimeSlot)
       setEditingItem(null)
       setSelectedTimeSlot(undefined)
     }

@@ -1,9 +1,11 @@
 import { Filter } from 'lucide-react'
-import { categories, grades } from '../../data/mockData'
 import { useAppContext } from '../../contexts/AppContext'
 
 export function FilterBar() {
   const { state, dispatch } = useAppContext()
+
+  const categories = ['全部', ...Array.from(new Set(state.courses.map(course => course.category).filter(Boolean)))]
+  const grades = ['全部', ...Array.from(new Set(state.courses.map(course => course.grade).filter(Boolean)))]
 
   return (
     <div className="bg-white border-b border-gray-100 px-4 py-3">
@@ -13,7 +15,6 @@ export function FilterBar() {
       </div>
       
       <div className="space-y-3">
-        {/* Category Filter */}
         <div>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {categories.map((category) => (
@@ -32,7 +33,6 @@ export function FilterBar() {
           </div>
         </div>
 
-        {/* Grade Filter */}
         <div>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {grades.map((grade) => (
