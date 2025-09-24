@@ -214,26 +214,10 @@ const AppContext = createContext<{
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
-  useEffect(() => {
-    const userRaw = localStorage.getItem('user')
-    const token = localStorage.getItem('jwt')
-    if (userRaw && token) {
-      const u = JSON.parse(userRaw) as { name: string; studentId: string }
-      dispatch({ type: 'LOGIN', payload: { name: u.name, studentId: u.studentId, token } })
-    }
-  }, [])
-
-  useEffect(() => {
-    loadCourses()
-  }, [])
-
-  useEffect(() => {
-    if (state.isLoggedIn && state.user) {
-      loadFavorites()
-      loadCartItems()
-      loadSelectedCourses()
-    }
-  }, [state.isLoggedIn])
+  const getDayOfWeekName = (dayNum: number): string => {
+    const days = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    return days[dayNum] || '周一'
+  }
 
   const loadCourses = async () => {
     dispatch({ type: 'SET_LOADING', payload: { key: 'courses', value: true } })
@@ -315,11 +299,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } finally {
       dispatch({ type: 'SET_LOADING', payload: { key: 'cart', value: false } })
     }
-  }
-
-  const getDayOfWeekName = (dayNum: number): string => {
-    const days = ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日']
-    return days[dayNum] || '周一'
   }
 
   const addToCart = async (item: CartItem) => {
@@ -436,6 +415,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadSelectedCourses,
     selectCourses
   }
+
+  useEffect(() => {
+    const userRaw = localStorage.getItem('user')
+    const token = localStorage.getItem('jwt')
+    if (userRaw && token) {
+      const u = JSON.parse(userRaw) as { name: string; studentId: string }
+      dispatch({ type: 'LOGIN', payload: { name: u.name, studentId: u.studentId, token } })
+    }
+  }, [])
+
+  useEffect(() => {
+    loadCourses()
+  }, [])
+
+  useEffect(() => {
+    if (state.isLoggedIn && state.user) {
+      loadFavorites()
+      loadCartItems()
+      loadSelectedCourses()
+    }
+  }, [state.isLoggedIn])
 
   return (
     <AppContext.Provider value={{ state, dispatch, actions }}>
